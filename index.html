@@ -1,20 +1,19 @@
 <!DOCTYPE html>
 <html lang="de">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Finn auf Fuerteventura</title>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Finns Abenteuer auf Fuerteventura</title>
+
 <style>
     body {
-        font-family: Arial, sans-serif;
-        text-align: center;
         margin: 0;
         padding: 20px;
+        font-family: Arial, sans-serif;
         background-size: cover;
         background-position: center;
-        background-repeat: no-repeat;
-        transition: background-image 0.6s ease;
-        color: #222;
+        text-align: center;
+        transition: background-image 0.5s ease;
     }
 
     #overlay {
@@ -25,59 +24,57 @@
         pointer-events: none;
     }
 
-    h1 { margin-bottom: 10px; }
-
     #game {
-        max-width: 440px;
-        margin: auto;
         background: white;
+        max-width: 450px;
+        margin: auto;
         padding: 20px;
-        border-radius: 15px;
-        box-shadow: 0 0 10px rgba(0,0,0,0.25);
-        position: relative;
+        border-radius: 16px;
+        box-shadow: 0 0 12px rgba(0,0,0,0.25);
     }
 
+    h1 { margin-top: 0; }
+
     #scene img {
-        width: 230px;
+        width: 240px;
         margin-top: 10px;
     }
 
-    button {
-        display: block;
-        width: 100%;
-        margin: 10px 0;
-        padding: 12px;
-        font-size: 16px;
-        border: none;
-        border-radius: 10px;
-        background: #4CAF50;
-        color: white;
-        cursor: pointer;
-        transition: background 0.2s;
-    }
-
-    button:hover { background: #45a049; }
-
     #progress {
         font-size: 14px;
-        margin-bottom: 10px;
-        color: gray;
+        color: #555;
+        margin-bottom: 8px;
     }
 
     #bar-bg {
         height: 6px;
         background: #ddd;
-        border-radius: 5px;
+        border-radius: 4px;
         margin-bottom: 10px;
     }
 
     #bar {
         height: 6px;
-        background: #4CAF50;
         width: 0%;
-        border-radius: 5px;
+        background: #4CAF50;
+        border-radius: 4px;
         transition: width 0.3s;
     }
+
+    button {
+        width: 100%;
+        margin-top: 12px;
+        padding: 12px;
+        border: none;
+        border-radius: 10px;
+        background: #4CAF50;
+        color: white;
+        font-size: 16px;
+        cursor: pointer;
+    }
+
+    button:hover { background: #45a049; }
+
 </style>
 </head>
 <body>
@@ -89,142 +86,134 @@
 <div id="game">
     <div id="progress">Start</div>
     <div id="bar-bg"><div id="bar"></div></div>
-    <p id="text">Finn steht am Flughafen – bereit für den Urlaub seines Lebens!</p>
-    <div id="scene"></div>
-    <div id="choices"></div>
+
+    <p id="text">Finn ist bereit für sein Abenteuer. Bereit?</p>
+
+    <div id="scene">
+        <!-- Cartoon-Finn – modern, braune Haare, Bart, Irland-Shirt -->
+        <img src="[files.openpix.ai](https://files.openpix.ai/finn-standing-demo.png)" alt="Finn" />
+    </div>
+
+    <div id="choices">
+        <button onclick="nextScene()">▶️ Starten</button>
+    </div>
 </div>
 
 <script>
 let step = 0;
 
-// leichte Hintergrundbilder pro Szene
 const backgrounds = {
-    start:       "[images.unsplash.com](https://images.unsplash.com/photo-1507525428034-b723cf961d3e)",
-    biking:      "[images.unsplash.com](https://images.unsplash.com/photo-1500530855697-b586d89ba3ee)",
-    wellness:    "[images.unsplash.com](https://images.unsplash.com/photo-1556228724-4c181bd3a8f5)",
-    boat:        "[images.unsplash.com](https://images.unsplash.com/photo-1500375592092-40eb2168fd21)",
-    food:        "[images.unsplash.com](https://images.unsplash.com/photo-1517248135467-4c7edcad34c4)",
-    ending:      "[images.unsplash.com](https://images.unsplash.com/photo-1507525428034-b723cf961d3e)"
+    start: "[images.unsplash.com](https://images.unsplash.com/photo-1507525428034-b723cf961d3e)",
+    bike:  "[images.unsplash.com](https://images.unsplash.com/photo-1500530855697-b586d89ba3ee)",
+    spa:   "[images.unsplash.com](https://images.unsplash.com/photo-1556228724-4c181bd3a8f5)",
+    boat:  "[images.unsplash.com](https://images.unsplash.com/photo-1500375592092-40eb2168fd21)",
+    food:  "[images.unsplash.com](https://images.unsplash.com/photo-1517248135467-4c7edcad34c4)",
+    end:   "[images.unsplash.com](https://images.unsplash.com/photo-1507525428034-b723cf961d3e)"
 };
 
-// Finns Figur – Irland-Trikot, braune Haare (symbolisch)
-const finnImage = "[raw.githubusercontent.com](https://raw.githubusercontent.com/ItsFinn/graphics/main/finn_ireland.png)";
+const finnStanding = "[files.openpix.ai](https://files.openpix.ai/finn-standing-demo.png)";
+const finnBike     = "[files.openpix.ai](https://files.openpix.ai/finn-bike-demo.gif)";
+const finnSpa      = "[files.openpix.ai](https://files.openpix.ai/finn-massage-demo.gif)";
+const finnBoat     = "[files.openpix.ai](https://files.openpix.ai/finn-boat-demo.gif)";
+const finnEat      = "[files.openpix.ai](https://files.openpix.ai/finn-eat-demo.gif)";
 
-function setBackground(scene) {
-    document.body.style.backgroundImage = `url('${backgrounds[scene]}')`;
+function setBG(type) {
+    document.body.style.backgroundImage = `url('${backgrounds[type]}')`;
 }
 
-// Szenenlogik
 function nextScene() {
     step++;
-    const text = document.getElementById("text");
-    const scene = document.getElementById("scene");
+    const text    = document.getElementById("text");
+    const scene   = document.getElementById("scene");
     const choices = document.getElementById("choices");
-    const progress = document.getElementById("progress");
-    const bar = document.getElementById("bar");
+    const bar     = document.getElementById("bar");
+    const progress= document.getElementById("progress");
 
-    bar.style.width = (step / 5 * 100) + "%";
+    bar.style.width = (step/5 * 100) + "%";
 
     if (step === 1) {
-        setBackground("biking");
-        progress.innerText = "1 / 4 🚴‍♂️";
-        text.innerText = "Finn holt sein Fahrrad heraus und schaut Richtung Berge.";
-        scene.innerHTML = `<img src="${finnImage}" alt="Finn" /><br>
-                           <img src="[media.giphy.com](https://media.giphy.com/media/LmNwrBhejkK9EFP504/giphy.gif)" alt="Radfahren">`;
-        choices.innerHTML = `<button onclick="playAction('bike')">🚴 Finn fährt los!</button>`;
+        setBG("bike");
+        progress.textContent = "1 / 4 🚴";
+        text.textContent = "Finn setzt sich auf das Fahrrad und schaut in Richtung Küste.";
+        scene.innerHTML = `<img src="${finnBike}" alt="Finn fährt Fahrrad">`;
+        choices.innerHTML = `<button onclick="playAction('bike')">🚴‍♂️ Losfahren</button>`;
     }
 
     else if (step === 2) {
-        setBackground("wellness");
-        progress.innerText = "2 / 4 💆";
-        text.innerText = "Nach dem Radeln gönnt sich Finn Entspannung.";
-        scene.innerHTML = `<img src="${finnImage}" alt="Finn">
-                           <img src="[media.giphy.com](https://media.giphy.com/media/LRpLY0rQ7qOuc/giphy.gif)" alt="Massage">`;
-        choices.innerHTML = `<button onclick="playAction('wellness')">💆‍♂️ Massage starten</button>`;
+        setBG("spa");
+        progress.textContent = "2 / 4 💆";
+        text.textContent = "Nach der Tour gönnt sich Finn eine Massage.";
+        scene.innerHTML = `<img src="${finnSpa}" alt="Massage">`;
+        choices.innerHTML = `<button onclick="playAction('spa')">💆 Entspannen</button>`;
     }
 
     else if (step === 3) {
-        setBackground("boat");
-        progress.innerText = "3 / 4 🚤";
-        text.innerText = "Zeit für ein Abenteuer auf dem Meer!";
-        scene.innerHTML = `<img src="${finnImage}" alt="Finn">
-                           <img src="[media.giphy.com](https://media.giphy.com/media/8YutMatqkTfSE/giphy.gif)" alt="Bootsfahrt">`;
-        choices.innerHTML = `<button onclick="playAction('boat')">⛴ Finn legt ab</button>`;
+        setBG("boat");
+        progress.textContent = "3 / 4 🚤";
+        text.textContent = "Finn steigt aufs Boot – bereit für Lanzarote!";
+        scene.innerHTML = `<img src="${finnBoat}" alt="Bootsfahrt">`;
+        choices.innerHTML = `<button onclick="playAction('boat')">⛴ Ablegen</button>`;
     }
 
     else if (step === 4) {
-        setBackground("food");
-        progress.innerText = "4 / 4 🍽";
-        text.innerText = "Nach einem spannenden Tag sitzt Finn im Restaurant.";
-        scene.innerHTML = `<img src="${finnImage}" alt="Finn">
-                           <img src="[media.giphy.com](https://media.giphy.com/media/pHO4pKTJnU6LM/giphy.gif)" alt="Essen">`;
-        choices.innerHTML = `<button onclick="playAction('food')">🍝 Finn bestellt sein Essen</button>`;
+        setBG("food");
+        progress.textContent = "4 / 4 🍽";
+        text.textContent = "Am Abend genießt Finn ein leckeres Essen.";
+        scene.innerHTML = `<img src="${finnEat}" alt="Finn isst">`;
+        choices.innerHTML = `<button onclick="playAction('food')">🍝 Essen servieren</button>`;
     }
 
     else if (step === 5) {
-        setBackground("ending");
-        progress.innerText = "Ende 🎉";
-        bar.style.width = "100%";
+        setBG("end");
+        progress.textContent = "Ende 🎉";
 
         const endings = [
-            "🌞 Finn sitzt bei Sonnenuntergang am Meer und denkt: Was für eine wunderbare Zeit! Danke an alle, die dieses Geschenk möglich gemacht haben!",
-            "🌴 Mit einem breiten Lächeln schaut Finn auf die Wellen – dankbar für die schönen Erinnerungen und die Sonne im Herzen.",
-            "💖 Finn fühlt sich glücklich, erholt und voller Energie. Diese Reise war das schönste Geburtstagsgeschenk – Danke euch allen!",
-            "🏖 Er atmet tief die warme Meeresluft ein und weiß: Das war etwas ganz Besonderes."
+            "🌅 Finn genießt den Sonnenuntergang und denkt: Was für ein wunderschönes Geschenk!",
+            "🌴 Glücklich blickt Finn aufs Meer – dieser Urlaub war einfach perfekt.",
+            "💚 Mit Sonne im Herzen sagt Finn: Danke für dieses unvergessliche Geschenk!",
+            "✨ Finn fühlt sich frei, leicht und dankbar. Eine Traumreise!"
         ];
-        const randomEnding = endings[Math.floor(Math.random() * endings.length)];
 
-        text.innerText = randomEnding;
-        scene.innerHTML = `<img src="${finnImage}" alt="Finn">`;
+        const final = endings[Math.floor(Math.random() * endings.length)];
+
+        text.textContent = final;
+        scene.innerHTML = `<img src="${finnStanding}" alt="Finn">`;
         choices.innerHTML = `<button onclick="restart()">🔄 Nochmal spielen</button>`;
     }
 }
 
-// Animationen bzw. Aktionen
-function playAction(action) {
-    const text = document.getElementById("text");
-    const scene = document.getElementById("scene");
+function playAction(type) {
+    const text  = document.getElementById("text");
     const choices = document.getElementById("choices");
 
-    choices.innerHTML = ""; // Knöpfe ausblenden, während Aktion läuft
+    choices.innerHTML = ""; 
 
-    if (action === "bike") {
-        text.innerText = "Finn fährt los, spürt den warmen Wind im Gesicht und genießt die Freiheit!";
-    }
-    else if (action === "wellness") {
-        text.innerText = "Finn schließt die Augen – Ruhe, Entspannung, Wohlbefinden.";
-    }
-    else if (action === "boat") {
-        text.innerText = "Das Boot wiegt sanft auf den Wellen. Finn lacht – Abenteuer pur!";
-    }
-    else if (action === "food") {
-        text.innerText = "Leckeres Essen, Meeresrauschen und Sonne – perfekter Abschluss.";
+    if (type === "bike") text.textContent = "Finn fährt los, der Wind weht, er lacht glücklich!";
+    if (type === "spa")  text.textContent = "Finn entspannt komplett – pure Ruhe.";
+    if (type === "boat") text.textContent = "Wellen spritzen, Sonne scheint, Finn genießt jede Sekunde!";
+    if (type === "food") text.textContent = "Das Essen schmeckt fantastisch – perfekter Abend.";
 
-    }
-    setTimeout(() => nextScene(), 3000);
+    setTimeout(() => nextScene(), 2600);
 }
 
-// Neustart
 function restart() {
     step = 0;
-    const text = document.getElementById("text");
-    const scene = document.getElementById("scene");
+    const text    = document.getElementById("text");
+    const scene   = document.getElementById("scene");
     const choices = document.getElementById("choices");
-    const progress = document.getElementById("progress");
-    const bar = document.getElementById("bar");
+    const bar     = document.getElementById("bar");
+    const progress= document.getElementById("progress");
 
-    progress.innerText = "Start";
+    setBG("start");
     bar.style.width = "0%";
-    setBackground("start");
+    progress.textContent = "Start";
 
-    text.innerText = "Finn steht am Flughafen – bereit für den Urlaub seines Lebens!";
-    scene.innerHTML = `<img src="${finnImage}" alt="Finn">`;
+    text.textContent = "Finn ist bereit für sein Abenteuer. Bereit?";
+    scene.innerHTML = `<img src="${finnStanding}" alt="Finn">`;
     choices.innerHTML = `<button onclick="nextScene()">▶️ Starten</button>`;
 }
 
-setBackground("start");
-document.getElementById("scene").innerHTML = `<img src="${finnImage}" alt="Finn">`;
-document.getElementById("choices").innerHTML = `<button onclick="nextScene()">▶️ Starten</button>`;
+setBG("start");
 </script>
 
 </body>
