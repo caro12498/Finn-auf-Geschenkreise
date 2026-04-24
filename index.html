@@ -14,6 +14,7 @@
         background-position: center;
         background-repeat: no-repeat;
         transition: background-image 0.6s ease;
+        color: #222;
     }
 
     #overlay {
@@ -27,13 +28,18 @@
     h1 { margin-bottom: 10px; }
 
     #game {
-        max-width: 420px;
+        max-width: 440px;
         margin: auto;
         background: white;
         padding: 20px;
         border-radius: 15px;
         box-shadow: 0 0 10px rgba(0,0,0,0.25);
         position: relative;
+    }
+
+    #scene img {
+        width: 230px;
+        margin-top: 10px;
     }
 
     button {
@@ -83,13 +89,15 @@
 <div id="game">
     <div id="progress">Start</div>
     <div id="bar-bg"><div id="bar"></div></div>
-    <p id="text">Finn ist bereit für seinen Urlaub! Was macht er zuerst?</p>
+    <p id="text">Finn steht am Flughafen – bereit für den Urlaub seines Lebens!</p>
+    <div id="scene"></div>
     <div id="choices"></div>
 </div>
 
 <script>
 let step = 0;
 
+// leichte Hintergrundbilder pro Szene
 const backgrounds = {
     start:       "[images.unsplash.com](https://images.unsplash.com/photo-1507525428034-b723cf961d3e)",
     biking:      "[images.unsplash.com](https://images.unsplash.com/photo-1500530855697-b586d89ba3ee)",
@@ -99,13 +107,18 @@ const backgrounds = {
     ending:      "[images.unsplash.com](https://images.unsplash.com/photo-1507525428034-b723cf961d3e)"
 };
 
+// Finns Figur – Irland-Trikot, braune Haare (symbolisch)
+const finnImage = "[raw.githubusercontent.com](https://raw.githubusercontent.com/ItsFinn/graphics/main/finn_ireland.png)";
+
 function setBackground(scene) {
     document.body.style.backgroundImage = `url('${backgrounds[scene]}')`;
 }
 
-function nextScene(choice) {
+// Szenenlogik
+function nextScene() {
     step++;
     const text = document.getElementById("text");
+    const scene = document.getElementById("scene");
     const choices = document.getElementById("choices");
     const progress = document.getElementById("progress");
     const bar = document.getElementById("bar");
@@ -115,45 +128,37 @@ function nextScene(choice) {
     if (step === 1) {
         setBackground("biking");
         progress.innerText = "1 / 4 🚴‍♂️";
-        text.innerText = "Finn möchte die Insel erkunden. Welches Rad nimmt er?";
-        choices.innerHTML = `
-            <button onclick="nextScene()">🚵 Mountainbike – ab in die Berge!</button>
-            <button onclick="nextScene()">🚴 Rennrad – ein sportlicher Tag!</button>
-            <button onclick="nextScene()">⚡ E‑Bike – entspannt im Sonnenwind.</button>
-        `;
+        text.innerText = "Finn holt sein Fahrrad heraus und schaut Richtung Berge.";
+        scene.innerHTML = `<img src="${finnImage}" alt="Finn" /><br>
+                           <img src="[media.giphy.com](https://media.giphy.com/media/LmNwrBhejkK9EFP504/giphy.gif)" alt="Radfahren">`;
+        choices.innerHTML = `<button onclick="playAction('bike')">🚴 Finn fährt los!</button>`;
     }
 
     else if (step === 2) {
         setBackground("wellness");
         progress.innerText = "2 / 4 💆";
-        text.innerText = "Nach dem Radeln braucht Finn Erholung. Welche Massage gönnt er sich?";
-        choices.innerHTML = `
-            <button onclick="nextScene()">💆 Klassisch – genau das Richtige!</button>
-            <button onclick="nextScene()">🔥 Hot Stone – pure Entspannung!</button>
-            <button onclick="nextScene()">🌿 Aromamassage – duftet wunderbar!</button>
-        `;
+        text.innerText = "Nach dem Radeln gönnt sich Finn Entspannung.";
+        scene.innerHTML = `<img src="${finnImage}" alt="Finn">
+                           <img src="[media.giphy.com](https://media.giphy.com/media/LRpLY0rQ7qOuc/giphy.gif)" alt="Massage">`;
+        choices.innerHTML = `<button onclick="playAction('wellness')">💆‍♂️ Massage starten</button>`;
     }
 
     else if (step === 3) {
         setBackground("boat");
         progress.innerText = "3 / 4 🚤";
-        text.innerText = "Ein kleiner Ausflug nach Lanzarote steht an. Wie kommt Finn hinüber?";
-        choices.innerHTML = `
-            <button onclick="nextScene()">🚤 Mit dem Schnellboot – Abenteuer!</button>
-            <button onclick="nextScene()">⛴ Mit der Fähre – Aussicht pur!</button>
-            <button onclick="nextScene()">🛥 Auf dem Luxusboot – Finn fühlt sich großartig!</button>
-        `;
+        text.innerText = "Zeit für ein Abenteuer auf dem Meer!";
+        scene.innerHTML = `<img src="${finnImage}" alt="Finn">
+                           <img src="[media.giphy.com](https://media.giphy.com/media/8YutMatqkTfSE/giphy.gif)" alt="Bootsfahrt">`;
+        choices.innerHTML = `<button onclick="playAction('boat')">⛴ Finn legt ab</button>`;
     }
 
     else if (step === 4) {
         setBackground("food");
         progress.innerText = "4 / 4 🍽";
-        text.innerText = "Nach einem perfekten Tag geht’s ins Restaurant. Was bestellt Finn?";
-        choices.innerHTML = `
-            <button onclick="nextScene()">🐟 Frischer Fisch – Geschmack des Meeres!</button>
-            <button onclick="nextScene()">🍝 Pasta – mediterran und lecker!</button>
-            <button onclick="nextScene()">🥗 Vegetarisch – leicht und fein!</button>
-        `;
+        text.innerText = "Nach einem spannenden Tag sitzt Finn im Restaurant.";
+        scene.innerHTML = `<img src="${finnImage}" alt="Finn">
+                           <img src="[media.giphy.com](https://media.giphy.com/media/pHO4pKTJnU6LM/giphy.gif)" alt="Essen">`;
+        choices.innerHTML = `<button onclick="playAction('food')">🍝 Finn bestellt sein Essen</button>`;
     }
 
     else if (step === 5) {
@@ -162,30 +167,64 @@ function nextScene(choice) {
         bar.style.width = "100%";
 
         const endings = [
-            "🌞 Finn sitzt bei Sonnenuntergang am Meer und denkt: Was für eine wunderbare Zeit! Danke an alle, die diese Reise möglich gemacht haben!",
-            "🌴 Mit einem breiten Lächeln schaut Finn auf die Wellen – er ist so dankbar für dieses großartige Geschenk und all die schönen Erinnerungen.",
-            "💖 Finn fühlt sich erholt, glücklich und voller Energie. Diese Reise war das schönste Geburtstagsgeschenk – Danke euch allen!",
-            "🏖 Er atmet tief die warme Meeresluft ein und weiß: Das war etwas ganz Besonderes. Danke für dieses unvergessliche Erlebnis!"
+            "🌞 Finn sitzt bei Sonnenuntergang am Meer und denkt: Was für eine wunderbare Zeit! Danke an alle, die dieses Geschenk möglich gemacht haben!",
+            "🌴 Mit einem breiten Lächeln schaut Finn auf die Wellen – dankbar für die schönen Erinnerungen und die Sonne im Herzen.",
+            "💖 Finn fühlt sich glücklich, erholt und voller Energie. Diese Reise war das schönste Geburtstagsgeschenk – Danke euch allen!",
+            "🏖 Er atmet tief die warme Meeresluft ein und weiß: Das war etwas ganz Besonderes."
         ];
-
         const randomEnding = endings[Math.floor(Math.random() * endings.length)];
+
         text.innerText = randomEnding;
+        scene.innerHTML = `<img src="${finnImage}" alt="Finn">`;
         choices.innerHTML = `<button onclick="restart()">🔄 Nochmal spielen</button>`;
     }
 }
 
+// Animationen bzw. Aktionen
+function playAction(action) {
+    const text = document.getElementById("text");
+    const scene = document.getElementById("scene");
+    const choices = document.getElementById("choices");
+
+    choices.innerHTML = ""; // Knöpfe ausblenden, während Aktion läuft
+
+    if (action === "bike") {
+        text.innerText = "Finn fährt los, spürt den warmen Wind im Gesicht und genießt die Freiheit!";
+    }
+    else if (action === "wellness") {
+        text.innerText = "Finn schließt die Augen – Ruhe, Entspannung, Wohlbefinden.";
+    }
+    else if (action === "boat") {
+        text.innerText = "Das Boot wiegt sanft auf den Wellen. Finn lacht – Abenteuer pur!";
+    }
+    else if (action === "food") {
+        text.innerText = "Leckeres Essen, Meeresrauschen und Sonne – perfekter Abschluss.";
+
+    }
+    setTimeout(() => nextScene(), 3000);
+}
+
+// Neustart
 function restart() {
     step = 0;
-    setBackground("start");
+    const text = document.getElementById("text");
+    const scene = document.getElementById("scene");
+    const choices = document.getElementById("choices");
+    const progress = document.getElementById("progress");
     const bar = document.getElementById("bar");
+
+    progress.innerText = "Start";
     bar.style.width = "0%";
-    document.getElementById("progress").innerText = "Start";
-    document.getElementById("text").innerText = "Finn ist bereit für seinen Urlaub! Was macht er zuerst?";
-    document.getElementById("choices").innerHTML = `<button onclick="nextScene()">▶️ Start</button>`;
+    setBackground("start");
+
+    text.innerText = "Finn steht am Flughafen – bereit für den Urlaub seines Lebens!";
+    scene.innerHTML = `<img src="${finnImage}" alt="Finn">`;
+    choices.innerHTML = `<button onclick="nextScene()">▶️ Starten</button>`;
 }
 
 setBackground("start");
-document.getElementById("choices").innerHTML = `<button onclick="nextScene()">▶️ Start</button>`;
+document.getElementById("scene").innerHTML = `<img src="${finnImage}" alt="Finn">`;
+document.getElementById("choices").innerHTML = `<button onclick="nextScene()">▶️ Starten</button>`;
 </script>
 
 </body>
