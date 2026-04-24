@@ -1,219 +1,251 @@
 <!DOCTYPE html>
 <html lang="de">
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Finns Abenteuer auf Fuerteventura</title>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Finns Abenteuer</title>
 
 <style>
     body {
         margin: 0;
-        padding: 20px;
         font-family: Arial, sans-serif;
-        background-size: cover;
-        background-position: center;
+        background: #ccecff;
         text-align: center;
-        transition: background-image 0.5s ease;
     }
-
-    #overlay {
-        position: fixed;
-        top: 0; left: 0;
-        width: 100%; height: 100%;
-        background: rgba(255,255,255,0.55);
-        pointer-events: none;
+    #gameCanvas {
+        display: none;
+        margin: 0 auto;
+        background: linear-gradient(#b0e3ff, #ffffff);
+        border: 4px solid #4CAF50;
+        border-radius: 12px;
     }
-
-    #game {
+    #sceneBox {
+        max-width: 460px;
+        margin: 30px auto;
         background: white;
-        max-width: 450px;
-        margin: auto;
         padding: 20px;
-        border-radius: 16px;
-        box-shadow: 0 0 12px rgba(0,0,0,0.25);
+        border-radius: 14px;
+        box-shadow: 0 0 12px rgba(0,0,0,0.3);
     }
-
-    h1 { margin-top: 0; }
-
-    #scene img {
-        width: 240px;
-        margin-top: 10px;
+    #sceneBox img {
+        width: 260px;
+        border-radius: 8px;
     }
-
-    #progress {
-        font-size: 14px;
-        color: #555;
-        margin-bottom: 8px;
-    }
-
-    #bar-bg {
-        height: 6px;
-        background: #ddd;
-        border-radius: 4px;
-        margin-bottom: 10px;
-    }
-
-    #bar {
-        height: 6px;
-        width: 0%;
-        background: #4CAF50;
-        border-radius: 4px;
-        transition: width 0.3s;
-    }
-
     button {
+        margin-top: 15px;
+        padding: 14px;
         width: 100%;
-        margin-top: 12px;
-        padding: 12px;
+        max-width: 300px;
+        font-size: 18px;
         border: none;
         border-radius: 10px;
         background: #4CAF50;
         color: white;
-        font-size: 16px;
         cursor: pointer;
     }
-
-    button:hover { background: #45a049; }
-
 </style>
 </head>
 <body>
 
-<div id="overlay"></div>
+<h1>🌴 Finns Fuerteventura Abenteuer 🇮🇪</h1>
 
-<h1>🌴 Finn auf Fuerteventura 🇮🇪</h1>
-
-<div id="game">
-    <div id="progress">Start</div>
-    <div id="bar-bg"><div id="bar"></div></div>
-
-    <p id="text">Finn ist bereit für sein Abenteuer. Bereit?</p>
-
-    <div id="scene">
-        <!-- Cartoon-Finn – modern, braune Haare, Bart, Irland-Shirt -->
-        <img src="[files.openpix.ai](https://files.openpix.ai/finn-standing-demo.png)" alt="Finn" />
-    </div>
-
-    <div id="choices">
-        <button onclick="nextScene()">▶️ Starten</button>
-    </div>
+<!-- Story Szenen -->
+<div id="sceneBox">
+    <h2 id="sceneTitle">Start</h2>
+    <p id="sceneText">Finn ist bereit für ein großes Abenteuer.</p>
+    <img id="sceneImg" src="[files.use.ai](https://files.use.ai/files/chat%2Ffiles%2Fb2a33e40-1787-4fad-92a3-0bc1c4041fa6-43a240b3-360a-4b1a-a0bf-eb2f2c94520d-1777037416946-0.png)">
+    <br>
+    <button onclick="startJumpLevel(1)">▶️ Abenteuer starten</button>
 </div>
 
-<script>
-let step = 0;
+<!-- Jump Game -->
+<canvas id="gameCanvas" width="360" height="600"></canvas>
 
-const backgrounds = {
-    start: "[images.unsplash.com](https://images.unsplash.com/photo-1507525428034-b723cf961d3e)",
-    bike:  "[images.unsplash.com](https://images.unsplash.com/photo-1500530855697-b586d89ba3ee)",
-    spa:   "[images.unsplash.com](https://images.unsplash.com/photo-1556228724-4c181bd3a8f5)",
-    boat:  "[images.unsplash.com](https://images.unsplash.com/photo-1500375592092-40eb2168fd21)",
-    food:  "[images.unsplash.com](https://images.unsplash.com/photo-1517248135467-4c7edcad34c4)",
-    end:   "[images.unsplash.com](https://images.unsplash.com/photo-1507525428034-b723cf961d3e)"
+<script>
+// -------------------------------
+// GLOBALS
+// -------------------------------
+let level = 1;
+let gameRunning = false;
+
+// Placeholder Finn graphics (werden später ersetzt)
+const finnSide = "[files.use.ai](https://files.use.ai/files/chat%2Ffiles%2Fb2a33e40-1787-4fad-92a3-0bc1c4041fa6-43a240b3-360a-4b1a-a0bf-eb2f2c94520d-1777037416946-0.png)";
+const finnBike = "[media.giphy.com](https://media.giphy.com/media/l0Ex8GsPPE1z3LbyQ/giphy.gif)";
+const finnMassage = "[media.giphy.com](https://media.giphy.com/media/LRpLY0rQ7qOuc/giphy.gif)";
+const finnBoat = "[media.giphy.com](https://media.giphy.com/media/8YutMatqkTfSE/giphy.gif)";
+const finnEat = "[media.giphy.com](https://media.giphy.com/media/pHO4pKTJnU6LM/giphy.gif)";
+
+// -------------------------------
+// STORY: Zeigt Szenen zwischen Levels
+// -------------------------------
+function showScene(title, text, img, callbackText, callbackFn) {
+    document.getElementById("gameCanvas").style.display = "none";
+    document.getElementById("sceneBox").style.display = "block";
+
+    document.getElementById("sceneTitle").innerText = title;
+    document.getElementById("sceneText").innerText = text;
+    document.getElementById("sceneImg").src = img;
+    document.querySelector("#sceneBox button").innerText = callbackText;
+    document.querySelector("#sceneBox button").onclick = callbackFn;
+}
+
+// -------------------------------
+// STORY + LEVEL REIHENFOLGE
+// -------------------------------
+function startJumpLevel(n) {
+    level = n;
+    document.getElementById("sceneBox").style.display = "none";
+    document.getElementById("gameCanvas").style.display = "block";
+    startGame();
+}
+
+function afterLevel(level) {
+    if (level == 1) {
+        showScene(
+            "🚴 Fahrrad",
+            "Finn fährt entspannt an der Küste entlang.",
+            finnBike,
+            "Weiterfahren",
+            () => startJumpLevel(2)
+        );
+    }
+    if (level == 2) {
+        showScene(
+            "💆 Massage",
+            "Finn entspannt sich nach dem wilden Springen.",
+            finnMassage,
+            "Weiter",
+            () => startJumpLevel(3)
+        );
+    }
+    if (level == 3) {
+        showScene(
+            "⛴ Bootsfahrt",
+            "Ein frischer Wind, Wellen und gute Laune!",
+            finnBoat,
+            "Auf zum Abendessen",
+            () => showEnding()
+        );
+    }
+}
+
+function showEnding() {
+    showScene(
+        "🍽 Abendessen am Strand",
+        "Finn genießt ein perfektes Essen bei Sonnenuntergang. Danke für dieses wunderbare Geschenk!",
+        finnEat,
+        "Nochmal spielen",
+        () => location.reload()
+    );
+}
+
+// -------------------------------
+// JUMP GAME (Doodle Jump Style)
+// -------------------------------
+const canvas = document.getElementById("gameCanvas");
+const ctx = canvas.getContext("2d");
+
+let player = {
+    x: 150,
+    y: 300,
+    w: 60,
+    h: 70,
+    vy: 0,
+    gravity: 0.4,
+    jumpForce: -10,
+    movingLeft: false,
+    movingRight: false
 };
 
-const finnStanding = "[files.openpix.ai](https://files.openpix.ai/finn-standing-demo.png)";
-const finnBike     = "[files.openpix.ai](https://files.openpix.ai/finn-bike-demo.gif)";
-const finnSpa      = "[files.openpix.ai](https://files.openpix.ai/finn-massage-demo.gif)";
-const finnBoat     = "[files.openpix.ai](https://files.openpix.ai/finn-boat-demo.gif)";
-const finnEat      = "[files.openpix.ai](https://files.openpix.ai/finn-eat-demo.gif)";
+let platforms = [];
 
-function setBG(type) {
-    document.body.style.backgroundImage = `url('${backgrounds[type]}')`;
-}
-
-function nextScene() {
-    step++;
-    const text    = document.getElementById("text");
-    const scene   = document.getElementById("scene");
-    const choices = document.getElementById("choices");
-    const bar     = document.getElementById("bar");
-    const progress= document.getElementById("progress");
-
-    bar.style.width = (step/5 * 100) + "%";
-
-    if (step === 1) {
-        setBG("bike");
-        progress.textContent = "1 / 4 🚴";
-        text.textContent = "Finn setzt sich auf das Fahrrad und schaut in Richtung Küste.";
-        scene.innerHTML = `<img src="${finnBike}" alt="Finn fährt Fahrrad">`;
-        choices.innerHTML = `<button onclick="playAction('bike')">🚴‍♂️ Losfahren</button>`;
-    }
-
-    else if (step === 2) {
-        setBG("spa");
-        progress.textContent = "2 / 4 💆";
-        text.textContent = "Nach der Tour gönnt sich Finn eine Massage.";
-        scene.innerHTML = `<img src="${finnSpa}" alt="Massage">`;
-        choices.innerHTML = `<button onclick="playAction('spa')">💆 Entspannen</button>`;
-    }
-
-    else if (step === 3) {
-        setBG("boat");
-        progress.textContent = "3 / 4 🚤";
-        text.textContent = "Finn steigt aufs Boot – bereit für Lanzarote!";
-        scene.innerHTML = `<img src="${finnBoat}" alt="Bootsfahrt">`;
-        choices.innerHTML = `<button onclick="playAction('boat')">⛴ Ablegen</button>`;
-    }
-
-    else if (step === 4) {
-        setBG("food");
-        progress.textContent = "4 / 4 🍽";
-        text.textContent = "Am Abend genießt Finn ein leckeres Essen.";
-        scene.innerHTML = `<img src="${finnEat}" alt="Finn isst">`;
-        choices.innerHTML = `<button onclick="playAction('food')">🍝 Essen servieren</button>`;
-    }
-
-    else if (step === 5) {
-        setBG("end");
-        progress.textContent = "Ende 🎉";
-
-        const endings = [
-            "🌅 Finn genießt den Sonnenuntergang und denkt: Was für ein wunderschönes Geschenk!",
-            "🌴 Glücklich blickt Finn aufs Meer – dieser Urlaub war einfach perfekt.",
-            "💚 Mit Sonne im Herzen sagt Finn: Danke für dieses unvergessliche Geschenk!",
-            "✨ Finn fühlt sich frei, leicht und dankbar. Eine Traumreise!"
-        ];
-
-        const final = endings[Math.floor(Math.random() * endings.length)];
-
-        text.textContent = final;
-        scene.innerHTML = `<img src="${finnStanding}" alt="Finn">`;
-        choices.innerHTML = `<button onclick="restart()">🔄 Nochmal spielen</button>`;
+function generatePlatforms() {
+    platforms = [];
+    for (let i = 0; i < 7; i++) {
+        platforms.push({
+            x: Math.random() * 280,
+            y: i * 90,
+            w: 80,
+            h: 10
+        });
     }
 }
 
-function playAction(type) {
-    const text  = document.getElementById("text");
-    const choices = document.getElementById("choices");
+document.addEventListener("keydown", e => {
+    if (e.key === "ArrowLeft") player.movingLeft = true;
+    if (e.key === "ArrowRight") player.movingRight = true;
+});
+document.addEventListener("keyup", e => {
+    if (e.key === "ArrowLeft") player.movingLeft = false;
+    if (e.key === "ArrowRight") player.movingRight = false;
+});
 
-    choices.innerHTML = ""; 
+const sprite = new Image();
+sprite.src = finnSide;
 
-    if (type === "bike") text.textContent = "Finn fährt los, der Wind weht, er lacht glücklich!";
-    if (type === "spa")  text.textContent = "Finn entspannt komplett – pure Ruhe.";
-    if (type === "boat") text.textContent = "Wellen spritzen, Sonne scheint, Finn genießt jede Sekunde!";
-    if (type === "food") text.textContent = "Das Essen schmeckt fantastisch – perfekter Abend.";
-
-    setTimeout(() => nextScene(), 2600);
+function startGame() {
+    gameRunning = true;
+    player.x = 150;
+    player.y = 300;
+    player.vy = 0;
+    generatePlatforms();
+    requestAnimationFrame(gameLoop);
 }
 
-function restart() {
-    step = 0;
-    const text    = document.getElementById("text");
-    const scene   = document.getElementById("scene");
-    const choices = document.getElementById("choices");
-    const bar     = document.getElementById("bar");
-    const progress= document.getElementById("progress");
+function gameLoop() {
+    if (!gameRunning) return;
 
-    setBG("start");
-    bar.style.width = "0%";
-    progress.textContent = "Start";
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-    text.textContent = "Finn ist bereit für sein Abenteuer. Bereit?";
-    scene.innerHTML = `<img src="${finnStanding}" alt="Finn">`;
-    choices.innerHTML = `<button onclick="nextScene()">▶️ Starten</button>`;
+    if (player.movingLeft)  player.x -= 4;
+    if (player.movingRight) player.x += 4;
+
+    if (player.x < -60) player.x = canvas.width;
+    if (player.x > canvas.width) player.x = -60;
+
+    player.vy += player.gravity;
+    player.y += player.vy;
+
+    for (let p of platforms) {
+        if (
+            player.vy > 0 &&
+            player.x + player.w > p.x &&
+            player.x < p.x + p.w &&
+            player.y + player.h > p.y &&
+            player.y + player.h < p.y + 20
+        ) {
+            player.vy = player.jumpForce;
+        }
+    }
+
+    if (player.y < 200) {
+        let diff = 200 - player.y;
+        player.y = 200;
+        platforms.forEach(p => p.y += diff);
+    }
+
+    for (let p of platforms) {
+        if (p.y > canvas.height) {
+            p.y = -10;
+            p.x = Math.random() * 280;
+        }
+    }
+
+    ctx.fillStyle = "#2e7d32";
+    platforms.forEach(p => {
+        ctx.fillRect(p.x, p.y, p.w, p.h);
+    });
+
+    ctx.drawImage(sprite, player.x, player.y, player.w, player.h);
+
+    if (player.y > canvas.height) {
+        gameRunning = false;
+        afterLevel(level);
+        return;
+    }
+
+    requestAnimationFrame(gameLoop);
 }
-
-setBG("start");
 </script>
 
 </body>
