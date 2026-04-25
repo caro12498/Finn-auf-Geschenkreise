@@ -1,0 +1,752 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<title>Finns Abenteuerurlaub</title>
+<style>
+body {
+  margin: 0;
+  font-family: 'Segoe UI', Arial, sans-serif;
+  background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+  color: white;
+  text-align: center;
+  min-height: 100vh;
+}
+
+#game { 
+  margin: 20px; 
+  padding: 20px;
+}
+
+canvas {
+  display: none;
+  margin: 20px auto;
+  border: 4px solid #2c3e50;
+  border-radius: 12px;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+}
+
+.choice {
+  display: inline-block;
+  margin: 12px;
+  padding: 16px 24px;
+  background: linear-gradient(145deg, #2c3e50, #34495e);
+  border-radius: 12px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  border: 2px solid transparent;
+  font-size: 16px;
+}
+
+.choice:hover {
+  background: linear-gradient(145deg, #3498db, #2980b9);
+  transform: translateY(-3px);
+  box-shadow: 0 6px 20px rgba(52, 152, 219, 0.4);
+}
+
+button {
+  padding: 14px 32px;
+  font-size: 18px;
+  cursor: pointer;
+  background: linear-gradient(145deg, #27ae60, #2ecc71);
+  border: none;
+  border-radius: 25px;
+  color: white;
+  transition: all 0.3s ease;
+}
+
+button:hover {
+  transform: scale(1.05);
+  box-shadow: 0 6px 20px rgba(46, 204, 113, 0.4);
+}
+
+h1 { 
+  margin-top: 30px;
+  font-size: 2.5em;
+  text-shadow: 2px 2px 8px rgba(0,0,0,0.3);
+}
+
+h2 {
+  color: #3498db;
+}
+</style>
+</head>
+<body>
+
+<h1>🏝️ Finns Abenteuerurlaub</h1>
+
+<div id="game"></div>
+<canvas id="canvas" width="800" height="400"></canvas>
+
+<script>
+const gameDiv = document.getElementById("game");
+const canvas = document.getElementById("canvas");
+const ctx = canvas.getContext("2d");
+
+let bike = "";
+let y = 300;
+let speedY = 0;
+let jump = false;
+let animationId = null;
+let pedalAngle = 0;
+let wheelAngle = 0;
+let particles = [];
+let clouds = [{x: 100, y: 60}, {x: 350, y: 40}, {x: 600, y: 70}];
+let birds = [{x: 200, y: 80, wingUp: true}, {x: 500, y: 100, wingUp: false}];
+let parallaxOffset = 0;
+
+// ---------- INTRO ----------
+function showIntro() {
+  canvas.style.display = "none";
+
+  gameDiv.innerHTML = `
+    <h2>🎁 Finns Abenteuer beginnt</h2>
+    <p>Finn hat von seinen Freunden einen Trip geschenkt gekriegt.</p>
+    <p>Ein Urlaub voller Überraschungen, Entscheidungen und Abenteuer wartet auf ihn.</p>
+    <p><strong>Er muss viele Dinge erleben und selbst entscheiden, wie seine Reise verläuft.</strong></p>
+    <br>
+    <button onclick="startLevel1()">➡️ Reise starten</button>
+  `;
+}
+
+// ---------- STOP GAME ----------
+function stopGame() {
+  if (animationId) {
+    cancelAnimationFrame(animationId);
+    animationId = null;
+  }
+}
+
+// ---------- LEVEL 1 ----------
+function startLevel1() {
+  stopGame();
+  canvas.style.display = "none";
+
+  gameDiv.innerHTML = `
+    <h2>🚲 Start</h2>
+    <p>Welches Fahrrad soll Finn nehmen?</p>
+
+    <div class="choice" onclick="chooseBike('Rennrad')">🚴 Rennrad<br><small>Schnell & aerodynamisch</small></div>
+    <div class="choice" onclick="chooseBike('Mountainbike')">🚵 Mountainbike<br><small>Robust & geländetauglich</small></div>
+    <div class="choice" onclick="chooseBike('E-Bike')">⚡ E-Bike<br><small>Elektrisch & komfortabel</small></div>
+  `;
+}
+
+function chooseBike(type) {
+  bike = type;
+  gameDiv.innerHTML = `<p>Finn fährt los mit seinem ${type} 🚴</p>`;
+  setTimeout(startLevel2, 1500);
+}
+
+// ---------- DRAWING FUNCTIONS ----------
+
+function drawSky() {
+  // Gradient sky
+  let gradient = ctx.createLinearGradient(0, 0, 0, 250);
+  gradient.addColorStop(0, "#1e90ff");
+  gradient.addColorStop(0.5, "#87ceeb");
+  gradient.addColorStop(1, "#b0e0e6");
+  ctx.fillStyle = gradient;
+  ctx.fillRect(0, 0, 800, 400);
+}
+
+function drawSun() {
+  // Sun with glow
+  ctx.save();
+  ctx.shadowColor = "#ffdd00";
+  ctx.shadowBlur = 40;
+  ctx.fillStyle = "#ffd700";
+  ctx.beginPath();
+  ctx.arc(700, 80, 40, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.restore();
+  
+  // Sun rays
+  ctx.strokeStyle = "rgba(255, 215, 0, 0.3)";
+  ctx.lineWidth = 3;
+  for (let i = 0; i < 12; i++) {
+    let angle = (i * 30) * Math.PI / 180;
+    ctx.beginPath();
+    ctx.moveTo(700 + Math.cos(angle) * 50, 80 + Math.sin(angle) * 50);
+    ctx.lineTo(700 + Math.cos(angle) * 70, 80 + Math.sin(angle) * 70);
+    ctx.stroke();
+  }
+}
+
+function drawCloud(x, y) {
+  ctx.fillStyle = "rgba(255, 255, 255, 0.9)";
+  ctx.beginPath();
+  ctx.arc(x, y, 25, 0, Math.PI * 2);
+  ctx.arc(x + 30, y - 10, 30, 0, Math.PI * 2);
+  ctx.arc(x + 60, y, 25, 0, Math.PI * 2);
+  ctx.arc(x + 30, y + 5, 20, 0, Math.PI * 2);
+  ctx.fill();
+}
+
+function drawBird(x, y, wingUp) {
+  ctx.strokeStyle = "#333";
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  if (wingUp) {
+    ctx.moveTo(x - 10, y + 5);
+    ctx.quadraticCurveTo(x, y - 8, x + 10, y + 5);
+  } else {
+    ctx.moveTo(x - 10, y - 5);
+    ctx.quadraticCurveTo(x, y + 8, x + 10, y - 5);
+  }
+  ctx.stroke();
+}
+
+function drawMountains() {
+  // Back mountains (parallax - moves slower)
+  ctx.fillStyle = "#4a6741";
+  ctx.beginPath();
+  ctx.moveTo(-50 - parallaxOffset * 0.2, 250);
+  ctx.lineTo(100 - parallaxOffset * 0.2, 120);
+  ctx.lineTo(250 - parallaxOffset * 0.2, 250);
+  ctx.fill();
+  
+  ctx.fillStyle = "#5a7751";
+  ctx.beginPath();
+  ctx.moveTo(200 - parallaxOffset * 0.2, 250);
+  ctx.lineTo(400 - parallaxOffset * 0.2, 100);
+  ctx.lineTo(600 - parallaxOffset * 0.2, 250);
+  ctx.fill();
+  
+  // Snow caps
+  ctx.fillStyle = "#fff";
+  ctx.beginPath();
+  ctx.moveTo(380 - parallaxOffset * 0.2, 115);
+  ctx.lineTo(400 - parallaxOffset * 0.2, 100);
+  ctx.lineTo(420 - parallaxOffset * 0.2, 115);
+  ctx.lineTo(400 - parallaxOffset * 0.2, 125);
+  ctx.fill();
+  
+  // Front mountains
+  ctx.fillStyle = "#3d5a3a";
+  ctx.beginPath();
+  ctx.moveTo(500 - parallaxOffset * 0.4, 250);
+  ctx.lineTo(650 - parallaxOffset * 0.4, 150);
+  ctx.lineTo(850 - parallaxOffset * 0.4, 250);
+  ctx.fill();
+}
+
+function drawPalm(x) {
+  // Trunk
+  ctx.fillStyle = "#8b4513";
+  ctx.beginPath();
+  ctx.moveTo(x - 8, 320);
+  ctx.lineTo(x - 5, 250);
+  ctx.lineTo(x + 5, 250);
+  ctx.lineTo(x + 8, 320);
+  ctx.fill();
+  
+  // Leaves
+  ctx.fillStyle = "#228b22";
+  for (let i = 0; i < 7; i++) {
+    ctx.save();
+    ctx.translate(x, 250);
+    ctx.rotate((i - 3) * 0.4);
+    ctx.beginPath();
+    ctx.ellipse(0, -30, 8, 35, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+  }
+}
+
+function drawGround() {
+  // Main ground
+  ctx.fillStyle = "#c2b280";
+  ctx.fillRect(0, 320, 800, 80);
+  
+  // Road
+  ctx.fillStyle = "#555";
+  ctx.fillRect(0, 320, 800, 40);
+  
+  // Road markings
+  ctx.fillStyle = "#fff";
+  for (let i = -1; i < 15; i++) {
+    ctx.fillRect(i * 60 - (parallaxOffset % 60), 338, 30, 4);
+  }
+  
+  // Grass patches
+  ctx.fillStyle = "#7cba5f";
+  ctx.fillRect(0, 360, 800, 40);
+}
+
+function drawBike(x, y, bikeType) {
+  // Wheel rotation
+  wheelAngle += 0.15;
+  
+  let frameColor, wheelSize;
+  
+  switch(bikeType) {
+    case "Rennrad":
+      frameColor = "#e74c3c";
+      wheelSize = 20;
+      break;
+    case "Mountainbike":
+      frameColor = "#2c3e50";
+      wheelSize = 24;
+      break;
+    case "E-Bike":
+      frameColor = "#3498db";
+      wheelSize = 22;
+      break;
+    default:
+      frameColor = "#e74c3c";
+      wheelSize = 20;
+  }
+  
+  // Back wheel
+  drawWheel(x - 20, y + 15, wheelSize);
+  // Front wheel
+  drawWheel(x + 35, y + 15, wheelSize);
+  
+  // Frame
+  ctx.strokeStyle = frameColor;
+  ctx.lineWidth = 4;
+  ctx.beginPath();
+  // Main triangle
+  ctx.moveTo(x - 20, y + 15); // back wheel
+  ctx.lineTo(x + 5, y - 20);  // seat post top
+  ctx.lineTo(x + 35, y + 15); // front wheel
+  ctx.lineTo(x - 20, y + 15);
+  // Top tube
+  ctx.moveTo(x + 5, y - 20);
+  ctx.lineTo(x + 30, y - 15);
+  // Head tube
+  ctx.lineTo(x + 35, y + 15);
+  ctx.stroke();
+  
+  // Seat
+  ctx.fillStyle = "#333";
+  ctx.fillRect(x, y - 28, 15, 6);
+  
+  // Handlebars
+  ctx.strokeStyle = "#333";
+  ctx.lineWidth = 3;
+  ctx.beginPath();
+  ctx.moveTo(x + 25, y - 25);
+  ctx.lineTo(x + 35, y - 20);
+  ctx.lineTo(x + 40, y - 15);
+  ctx.stroke();
+  
+  // Pedals (animated)
+  pedalAngle += 0.1;
+  ctx.fillStyle = "#666";
+  let pedalX1 = x + 5 + Math.cos(pedalAngle) * 12;
+  let pedalY1 = y + 5 + Math.sin(pedalAngle) * 12;
+  let pedalX2 = x + 5 + Math.cos(pedalAngle + Math.PI) * 12;
+  let pedalY2 = y + 5 + Math.sin(pedalAngle + Math.PI) * 12;
+  ctx.fillRect(pedalX1 - 4, pedalY1 - 2, 8, 4);
+  ctx.fillRect(pedalX2 - 4, pedalY2 - 2, 8, 4);
+  
+  // E-Bike battery
+  if (bikeType === "E-Bike") {
+    ctx.fillStyle = "#2ecc71";
+    ctx.fillRect(x - 5, y - 10, 15, 8);
+    ctx.fillStyle = "#27ae60";
+    ctx.fillRect(x - 3, y - 8, 10, 4);
+  }
+}
+
+function drawWheel(x, y, size) {
+  // Tire
+  ctx.strokeStyle = "#222";
+  ctx.lineWidth = 5;
+  ctx.beginPath();
+  ctx.arc(x, y, size, 0, Math.PI * 2);
+  ctx.stroke();
+  
+  // Rim
+  ctx.strokeStyle = "#888";
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.arc(x, y, size - 3, 0, Math.PI * 2);
+  ctx.stroke();
+  
+  // Spokes
+  ctx.strokeStyle = "#aaa";
+  ctx.lineWidth = 1;
+  for (let i = 0; i < 8; i++) {
+    let angle = wheelAngle + (i * Math.PI / 4);
+    ctx.beginPath();
+    ctx.moveTo(x, y);
+    ctx.lineTo(x + Math.cos(angle) * (size - 4), y + Math.sin(angle) * (size - 4));
+    ctx.stroke();
+  }
+  
+  // Hub
+  ctx.fillStyle = "#666";
+  ctx.beginPath();
+  ctx.arc(x, y, 4, 0, Math.PI * 2);
+  ctx.fill();
+}
+
+function drawFinn(x, y) {
+  // Shadow
+  ctx.fillStyle = "rgba(0,0,0,0.2)";
+  ctx.beginPath();
+  ctx.ellipse(x + 10, 355, 25, 8, 0, 0, Math.PI * 2);
+  ctx.fill();
+  
+  // Legs (animated with pedaling)
+  ctx.fillStyle = "#2c3e50";
+  let legAngle = pedalAngle;
+  
+  // Left leg
+  ctx.save();
+  ctx.translate(x + 5, y - 15);
+  ctx.rotate(Math.sin(legAngle) * 0.3);
+  ctx.fillRect(-4, 0, 8, 25);
+  ctx.restore();
+  
+  // Right leg
+  ctx.save();
+  ctx.translate(x + 15, y - 15);
+  ctx.rotate(Math.sin(legAngle + Math.PI) * 0.3);
+  ctx.fillRect(-4, 0, 8, 25);
+  ctx.restore();
+  
+  // Body/Torso
+  ctx.fillStyle = "#27ae60";
+  ctx.beginPath();
+  ctx.ellipse(x + 10, y - 30, 12, 18, 0, 0, Math.PI * 2);
+  ctx.fill();
+  
+  // Arms
+  ctx.fillStyle = "#f1c27d";
+  ctx.strokeStyle = "#f1c27d";
+  ctx.lineWidth = 6;
+  ctx.lineCap = "round";
+  
+  // Left arm (to handlebar)
+  ctx.beginPath();
+  ctx.moveTo(x + 5, y - 35);
+  ctx.lineTo(x + 30, y - 40);
+  ctx.stroke();
+  
+  // Right arm
+  ctx.beginPath();
+  ctx.moveTo(x + 15, y - 35);
+  ctx.lineTo(x + 35, y - 38);
+  ctx.stroke();
+  
+  // Head
+  ctx.fillStyle = "#f1c27d";
+  ctx.beginPath();
+  ctx.arc(x + 10, y - 55, 14, 0, Math.PI * 2);
+  ctx.fill();
+  
+  // Hair
+  ctx.fillStyle = "#5d4037";
+  ctx.beginPath();
+  ctx.ellipse(x + 10, y - 62, 12, 8, 0, Math.PI, Math.PI * 2);
+  ctx.fill();
+  ctx.fillRect(x - 2, y - 65, 24, 8);
+  
+  // Face details
+  // Eyes
+  ctx.fillStyle = "#fff";
+  ctx.beginPath();
+  ctx.arc(x + 5, y - 55, 4, 0, Math.PI * 2);
+  ctx.arc(x + 15, y - 55, 4, 0, Math.PI * 2);
+  ctx.fill();
+  
+  ctx.fillStyle = "#333";
+  ctx.beginPath();
+  ctx.arc(x + 6, y - 55, 2, 0, Math.PI * 2);
+  ctx.arc(x + 16, y - 55, 2, 0, Math.PI * 2);
+  ctx.fill();
+  
+  // Smile
+  ctx.strokeStyle = "#333";
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.arc(x + 10, y - 50, 6, 0.2, Math.PI - 0.2);
+  ctx.stroke();
+  
+  // Helmet
+  ctx.fillStyle = "#e74c3c";
+  ctx.beginPath();
+  ctx.ellipse(x + 10, y - 65, 14, 10, 0, Math.PI, Math.PI * 2);
+  ctx.fill();
+}
+
+function drawRock(x, h) {
+  // Rock shadow
+  ctx.fillStyle = "rgba(0,0,0,0.3)";
+  ctx.beginPath();
+  ctx.ellipse(x + 25, 355, 30, 8, 0, 0, Math.PI * 2);
+  ctx.fill();
+  
+  // Main rock body
+  let gradient = ctx.createLinearGradient(x, 320 - h, x + 50, 320);
+  gradient.addColorStop(0, "#6b6b6b");
+  gradient.addColorStop(0.5, "#888");
+  gradient.addColorStop(1, "#555");
+  ctx.fillStyle = gradient;
+  
+  ctx.beginPath();
+  ctx.moveTo(x, 320);
+  ctx.lineTo(x + 10, 320 - h * 0.7);
+  ctx.lineTo(x + 25, 320 - h);
+  ctx.lineTo(x + 40, 320 - h * 0.8);
+  ctx.lineTo(x + 50, 320);
+  ctx.closePath();
+  ctx.fill();
+  
+  // Rock texture
+  ctx.strokeStyle = "rgba(0,0,0,0.2)";
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.moveTo(x + 15, 320 - h * 0.5);
+  ctx.lineTo(x + 25, 320 - h * 0.3);
+  ctx.moveTo(x + 30, 320 - h * 0.6);
+  ctx.lineTo(x + 38, 320 - h * 0.4);
+  ctx.stroke();
+}
+
+function updateParticles() {
+  for (let i = particles.length - 1; i >= 0; i--) {
+    let p = particles[i];
+    p.x += p.vx;
+    p.y += p.vy;
+    p.vy += 0.2;
+    p.life--;
+    
+    if (p.life <= 0) {
+      particles.splice(i, 1);
+    }
+  }
+}
+
+function drawParticles() {
+  for (let p of particles) {
+    ctx.fillStyle = `rgba(194, 178, 128, ${p.life / 20})`;
+    ctx.beginPath();
+    ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+    ctx.fill();
+  }
+}
+
+function spawnDustParticles(x, y) {
+  for (let i = 0; i < 8; i++) {
+    particles.push({
+      x: x + Math.random() * 30,
+      y: y,
+      vx: (Math.random() - 0.5) * 3,
+      vy: -Math.random() * 3,
+      size: 2 + Math.random() * 3,
+      life: 15 + Math.random() * 10
+    });
+  }
+}
+
+// ---------- LEVEL 2 ----------
+function startLevel2() {
+  stopGame();
+  particles = [];
+
+  gameDiv.innerHTML = "<p>⬆️ Tippen / Klick / LEERTASTE = Springen</p>";
+  canvas.style.display = "block";
+
+  let obstacles = [];
+  for (let i = 0; i < 12; i++) {
+    obstacles.push({ x: 800 + i * 250, h: 30 + Math.random() * 40 });
+  }
+
+  let xFinn = 100;
+  let wasInAir = false;
+
+  function loop() {
+    ctx.clearRect(0, 0, 800, 400);
+    
+    parallaxOffset += 2;
+
+    // Draw background layers
+    drawSky();
+    drawSun();
+    
+    // Animate and draw clouds
+    for (let cloud of clouds) {
+      cloud.x -= 0.5;
+      if (cloud.x < -100) cloud.x = 900;
+      drawCloud(cloud.x - parallaxOffset * 0.1, cloud.y);
+    }
+    
+    // Animate birds
+    if (Math.random() < 0.02) {
+      for (let bird of birds) {
+        bird.wingUp = !bird.wingUp;
+      }
+    }
+    for (let bird of birds) {
+      bird.x -= 1;
+      if (bird.x < -20) bird.x = 820;
+      drawBird(bird.x, bird.y, bird.wingUp);
+    }
+    
+    drawMountains();
+    
+    // Draw palms (parallax)
+    drawPalm(150 - (parallaxOffset * 0.5) % 400 + 400);
+    drawPalm(350 - (parallaxOffset * 0.5) % 400 + 400);
+    
+    drawGround();
+
+    // Update and draw particles
+    updateParticles();
+    drawParticles();
+
+    // Draw bike
+    drawBike(xFinn, y, bike);
+    
+    // Draw Finn on bike
+    drawFinn(xFinn, y);
+
+    // Draw and move obstacles
+    for (let o of obstacles) {
+      o.x -= 5;
+      drawRock(o.x, o.h);
+
+      // Collision detection
+      if (xFinn + 50 > o.x && xFinn < o.x + 50 && y + 15 > 320 - o.h) {
+        // Auto-hop on collision
+        if (y >= 295) {
+          speedY = -8;
+        }
+      }
+    }
+
+    // Jump physics
+    if (jump && y >= 295) {
+      speedY = -14;
+      jump = false;
+    }
+    
+    y += speedY;
+    speedY += 0.6; // gravity
+    
+    // Landing detection
+    if (y > 300) {
+      if (wasInAir) {
+        spawnDustParticles(xFinn, 340);
+      }
+      y = 300;
+      speedY = 0;
+      wasInAir = false;
+    } else {
+      wasInAir = true;
+    }
+
+    animationId = requestAnimationFrame(loop);
+
+    // Check if level complete
+    if (obstacles[obstacles.length - 1].x < -60) {
+      stopGame();
+      gameDiv.innerHTML = "<p>🎉 Geschafft!</p>";
+      setTimeout(startLevel3, 1500);
+    }
+  }
+
+  window.onkeydown = e => {
+    if (e.code === "Space" && y >= 295) {
+      jump = true;
+      e.preventDefault();
+    }
+  };
+
+  canvas.onclick = () => { if (y >= 295) jump = true; };
+  canvas.ontouchstart = (e) => { 
+    if (y >= 295) jump = true;
+    e.preventDefault();
+  };
+
+  loop();
+}
+
+// ---------- LEVEL 3 ----------
+function startLevel3() {
+  stopGame();
+  canvas.style.display = "none";
+
+  gameDiv.innerHTML = `
+    <h2>🍽️ Essen</h2>
+    <p>Finn hat riesigen Hunger nach der Radtour!</p>
+    <p><strong>Was soll er essen?</strong></p>
+
+    <div class="choice" onclick="chooseFood('Burger')">🍔 Burger<br><small>Saftig & herzhaft</small></div>
+    <div class="choice" onclick="chooseFood('Pasta')">🍝 Pasta<br><small>Italienisch & lecker</small></div>
+    <div class="choice" onclick="chooseFood('Tapas')">🍤 Tapas<br><small>Spanisch & vielfältig</small></div>
+  `;
+}
+
+function chooseFood(food) {
+  gameDiv.innerHTML = `<p>Finn genießt ${food} und fühlt sich gestärkt! 😋</p>`;
+  setTimeout(startLevel4, 1500);
+}
+
+// ---------- LEVEL 4 ----------
+function startLevel4() {
+  gameDiv.innerHTML = `
+    <h2>🌊 Überfahrt</h2>
+    <p><strong>Finn fährt von Fuerteventura nach Lanzarote</strong></p>
+
+    <div class="choice" onclick="chooseBoat('Speedboat')">🚤 Speedboat<br><small>Schnell & aufregend</small></div>
+    <div class="choice" onclick="chooseBoat('Kanu')">🛶 Kanu<br><small>Sportlich & naturverbunden</small></div>
+    <div class="choice" onclick="chooseBoat('Fähre')">🛳️ Fähre<br><small>Entspannt & komfortabel</small></div>
+  `;
+}
+
+function chooseBoat(boat) {
+  gameDiv.innerHTML = `<p>Finn fährt mit dem ${boat} über das türkisblaue Meer 🌊</p>`;
+  setTimeout(startLevel5, 1800);
+}
+
+// ---------- LEVEL 5 ----------
+function startLevel5() {
+  gameDiv.innerHTML = `
+    <h2>💆‍♂️ Wellness & Massage</h2>
+    <p>Nach all den Abenteuern hat Finn sich Entspannung verdient!</p>
+
+    <div class="choice" onclick="chooseMassage('Thai-Massage')">🧘 Thai-Massage<br><small>Traditionell & energetisch</small></div>
+    <div class="choice" onclick="chooseMassage('Hot Stone')">🔥 Hot Stone<br><small>Wärmend & tiefenentspannend</small></div>
+    <div class="choice" onclick="chooseMassage('Lomi Lomi')">🌺 Lomi Lomi<br><small>Hawaiianisch & fließend</small></div>
+  `;
+}
+
+function chooseMassage(type) {
+  gameDiv.innerHTML = `<p>Finn genießt eine entspannende ${type} und fühlt sich wie neugeboren 😌</p>`;
+  setTimeout(startFinalQuestion, 1800);
+}
+
+// ---------- FINAL ----------
+function startFinalQuestion() {
+  gameDiv.innerHTML = `
+    <h2>🤔 Wie war der Urlaub?</h2>
+    <p>Finn schaut zurück auf seine Reise...</p>
+
+    <div class="choice" onclick="endGame()">🌟 Unvergesslich</div>
+    <div class="choice" onclick="endGame()">🔥 Dermaßen geil</div>
+    <div class="choice" onclick="endGame()">💯 Hat alles gegeben</div>
+  `;
+}
+
+function endGame() {
+  gameDiv.innerHTML = `
+    <h2>🎉 Ende</h2>
+    <p style="font-size: 1.3em;">Finn hatte den perfekten Abenteuerurlaub! 😎🏝️</p>
+    <p>Danke fürs Spielen!</p>
+    <br>
+    <button onclick="showIntro()">🔄 Nochmal spielen</button>
+  `;
+}
+
+// Start
+showIntro();
+</script>
+
+</body>
+</html>
